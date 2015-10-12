@@ -21,17 +21,17 @@ public class TestActivity extends Activity {
         mAnimatingTextView = (AnimatingTextView) findViewById(R.id.animating_text_view);
         mAnimatingTextView.setTextColor(Color.BLACK);
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
         if(!mAnimatingTextView.isAnimating()) {
             Log.d(TAG,"restarting animation");
             mAnimatingTextView.setTextToAnimate("THIS IS A TEST PLEASE HELP, THIS IS A TEST PLEASE HELP, THIS IS A TEST PLEASE HELP, THIS IS A TEST PLEASE HELP");
-            mAnimatingTextView.setDurationPerCharacter(100);
+            mAnimatingTextView.setTotalDuration(5000);
             mAnimatingTextView.start();
         }
-//        mAnimatingTextView.postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
-//                mAnimatingTextView.start();
-//            }
-//        }, 2000);
     }
 }
