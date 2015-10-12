@@ -1,10 +1,13 @@
 package com.doglandia.animatingtextviewlib;
 
+import android.animation.Animator;
 import android.animation.ObjectAnimator;
-import android.animation.ValueAnimator;
 import android.content.Context;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.text.TextPaint;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -14,13 +17,22 @@ import java.util.ArrayList;
  */
 public class AnimatingTextView extends TextView {
 
+    private static final String TAG = "AnimatingTextView";
     private String textToAnimate;
     private long totalDuration = 0;
     private long perCharDuration = 0;
     private long duration = 0;
 
+    private boolean startOnLayout = false;
+    private boolean laidOut = false;
+
     private ObjectAnimator animator;
     private String currentlyDisplayingText;
+
+    // used to restore a playing animation after instance restore
+    private long restoredPlayTime = -1;
+
+    private Animator.AnimatorListener animatorListener;
 
     public AnimatingTextView(Context context) {
         super(context);
@@ -50,25 +62,71 @@ public class AnimatingTextView extends TextView {
         perCharDuration = 0;
     }
 
+    public void setAnimatorListener(Animator.AnimatorListener animatorListener) {
+        this.animatorListener = animatorListener;
+    }
 
     /* animation api */
 
     public void start(){
-        if(textToAnimate == null){
+        post(new Runnable() {
+            @Override
+            public void run() {
+                startAnimating();
+            }
+        });
+
+    }
+
+    private void startAnimating(){
+        if (!laidOut) {
+            startOnLayout = true;
+        }
+        if (textToAnimate == null) {
             RuntimeException exception = new RuntimeException("Text to animate must be set.");
             throw exception;
-        }else if(totalDuration == 0 || perCharDuration == 0){
+        } else if (totalDuration == 0 && perCharDuration == 0) {
             RuntimeException exception = new RuntimeException("Total Duration or Duration per Charcter must be set");
             throw exception;
         }
-        measureText(this);
+        measureText(AnimatingTextView.this);
         resolveDuration();
 
-        if(animator == null){
-            animator = ObjectAnimator.ofInt(this,"remainingDuration",0,(int)duration);
+        if (animator == null) {
+            animator = ObjectAnimator.ofInt(this, "Delta", 0, (int) totalDuration);
+            animator.setDuration(totalDuration);
+            if (restoredPlayTime >= 0) {
+                animator.setCurrentPlayTime(restoredPlayTime);
+                restoredPlayTime = -1; // reset to avoid any problems
+            }
+            if(animatorListener != null){
+                animator.addListener(animatorListener);
+            }
+            animator.addListener(new Animator.AnimatorListener() {
+                @Override
+                public void onAnimationStart(Animator animation) {
+
+                }
+
+                @Override
+                public void onAnimationEnd(Animator animation) {
+
+                }
+
+                @Override
+                public void onAnimationCancel(Animator animation) {
+
+                }
+
+                @Override
+                public void onAnimationRepeat(Animator animation) {
+
+                }
+            });
+        } else {
+            animator.end();
         }
 
-        animator.end();
         animator.start();
     }
 
@@ -76,8 +134,23 @@ public class AnimatingTextView extends TextView {
 
     }
 
-    private void setRemainingDuration(int remainingDuration){
+    public boolean isAnimating(){
+        if(restoredPlayTime >=0){
+            return true;
+        }
+        if(animator != null){
+            return animator.isRunning();
+        }
+        return false;
+    }
 
+    private void setDelta(int delta){
+//        Log.d(TAG,"delta/totalDuration == " + delta+"/"+totalDuration+" == "+ ((double)delta/(double)totalDuration));
+        int subStringIndex = (int)(((((double)delta/(double)totalDuration))) * (double)textToAnimate.length());
+//        Log.d(TAG,"subStringIndex = "+subStringIndex);
+        currentlyDisplayingText = textToAnimate.substring(0, subStringIndex);
+
+        setText(currentlyDisplayingText);
     }
 
     private void resolveDuration(){
@@ -99,7 +172,7 @@ public class AnimatingTextView extends TextView {
         for(int i = 0; i < words.length; i++){
             String word = words[i] + " ";
             currentLine.append(word);
-            int viewWidth = getWidth();
+            int viewWidth = getWidth() - (getPaddingLeft() + getPaddingRight());
             if(textPaint.measureText(currentLine.toString()) > viewWidth){
                 currentLine.delete(currentLine.length()-word.length()-1,currentLine.length()); // -1 is for the last space
                 resolvedLines.add(currentLine.toString());
@@ -122,4 +195,80 @@ public class AnimatingTextView extends TextView {
 
     }
 
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        laidOut = true;
+        if(startOnLayout){
+            start();
+        }
+    }
+
+    @Override
+    public Parcelable onSaveInstanceState() {
+        Parcelable superState = super.onSaveInstanceState();
+
+        if(animator != null && animator.isRunning()) {
+            SavedState ss = new SavedState(superState);
+            ss.elapsedAnimationTime = animator.getCurrentPlayTime();
+            ss.totalDuration = totalDuration;
+            ss.textToAnimate = textToAnimate;
+            return ss;
+        }
+        return superState;
+    }
+
+    @Override
+    public void onRestoreInstanceState(Parcelable state) {
+        //begin boilerplate code so parent classes can restore state
+        if(!(state instanceof SavedState)) {
+            super.onRestoreInstanceState(state);
+            return;
+        }
+
+        SavedState ss = (SavedState)state;
+        super.onRestoreInstanceState(ss.getSuperState());
+
+        // start animator with restored values
+        this.textToAnimate = ss.textToAnimate;
+        this.totalDuration = ss.totalDuration;
+        this.restoredPlayTime = ss.elapsedAnimationTime;
+        start();
+    }
+
+    static class SavedState extends BaseSavedState {
+        long elapsedAnimationTime;
+        long totalDuration;
+        String textToAnimate;
+
+        SavedState(Parcelable superState) {
+            super(superState);
+        }
+
+        private SavedState(Parcel in) {
+            super(in);
+            this.elapsedAnimationTime = in.readLong();
+            this.totalDuration = in.readLong();
+            this.textToAnimate = in.readString();
+        }
+
+        @Override
+        public void writeToParcel(Parcel out, int flags) {
+            super.writeToParcel(out, flags);
+            out.writeLong(this.elapsedAnimationTime);
+            out.writeLong(this.totalDuration);
+            out.writeString(this.textToAnimate);
+        }
+
+        //required field that makes Parcelables from a Parcel
+        public static final Parcelable.Creator<SavedState> CREATOR =
+                new Parcelable.Creator<SavedState>() {
+                    public SavedState createFromParcel(Parcel in) {
+                        return new SavedState(in);
+                    }
+                    public SavedState[] newArray(int size) {
+                        return new SavedState[size];
+                    }
+                };
+    }
 }
