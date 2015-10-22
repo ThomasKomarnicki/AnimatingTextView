@@ -9,6 +9,7 @@
         android:id="@+id/animating_text_view"
         android:layout_gravity="center"
         android:textSize="14sp"
+        android:background="#7eebf2"
         android:padding="16dp" />
 
 </FrameLayout>

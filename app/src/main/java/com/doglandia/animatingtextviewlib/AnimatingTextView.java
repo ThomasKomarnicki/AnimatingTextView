@@ -7,7 +7,6 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextPaint;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -102,27 +101,6 @@ public class AnimatingTextView extends TextView {
             if(animatorListener != null){
                 animator.addListener(animatorListener);
             }
-            animator.addListener(new Animator.AnimatorListener() {
-                @Override
-                public void onAnimationStart(Animator animation) {
-
-                }
-
-                @Override
-                public void onAnimationEnd(Animator animation) {
-
-                }
-
-                @Override
-                public void onAnimationCancel(Animator animation) {
-
-                }
-
-                @Override
-                public void onAnimationRepeat(Animator animation) {
-
-                }
-            });
         } else {
             animator.end();
         }
@@ -191,8 +169,49 @@ public class AnimatingTextView extends TextView {
             newMessage.append(currentLine.toString());
         }
 
+        resolvedLines.add(currentLine.toString());
+
         textToAnimate = newMessage.toString();
 
+        desiredWidth = (int) textPaint.measureText(textToAnimate);
+
+        desiredHeight = (int) ((textPaint.getFontSpacing())*resolvedLines.size());
+        desiredHeight += getPaddingBottom() + getPaddingTop();
+
+
+    }
+
+    int desiredWidth;
+    int desiredHeight;
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+
+        int widthMode = MeasureSpec.getMode(widthMeasureSpec);
+        int widthSize = MeasureSpec.getSize(widthMeasureSpec);
+        int heightMode = MeasureSpec.getMode(heightMeasureSpec);
+        int heightSize = MeasureSpec.getSize(heightMeasureSpec);
+
+        int width;
+        int height;
+
+        if (widthMode == MeasureSpec.EXACTLY) {
+            width = widthSize;
+        } else if (widthMode == MeasureSpec.AT_MOST) {
+            width = Math.min(desiredWidth, widthSize);
+        } else {
+            width = desiredWidth;
+        }
+
+        if (heightMode == MeasureSpec.EXACTLY) {
+            height = heightSize;
+        } else if (heightMode == MeasureSpec.AT_MOST) {
+            height = Math.min(desiredHeight, heightSize);
+        } else {
+            height = desiredHeight;
+        }
+
+        setMeasuredDimension(width,height);
     }
 
     @Override
@@ -220,7 +239,6 @@ public class AnimatingTextView extends TextView {
 
     @Override
     public void onRestoreInstanceState(Parcelable state) {
-        //begin boilerplate code so parent classes can restore state
         if(!(state instanceof SavedState)) {
             super.onRestoreInstanceState(state);
             return;
@@ -229,7 +247,6 @@ public class AnimatingTextView extends TextView {
         SavedState ss = (SavedState)state;
         super.onRestoreInstanceState(ss.getSuperState());
 
-        // start animator with restored values
         this.textToAnimate = ss.textToAnimate;
         this.totalDuration = ss.totalDuration;
         this.restoredPlayTime = ss.elapsedAnimationTime;
