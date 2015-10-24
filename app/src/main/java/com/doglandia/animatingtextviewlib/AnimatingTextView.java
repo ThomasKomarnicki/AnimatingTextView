@@ -19,6 +19,7 @@ public class AnimatingTextView extends TextView {
 
     private static final String TAG = "AnimatingTextView";
     private String textToAnimate;
+    private String targetText;
     private long totalDuration = 0;
     private long perCharDuration = 0;
     private long duration = 0;
@@ -49,7 +50,7 @@ public class AnimatingTextView extends TextView {
 
 
     public void setTextToAnimate(String text){
-        this.textToAnimate = text;
+        this.targetText = text;
     }
 
     public void setDurationPerCharacter(long milliseconds){
@@ -83,7 +84,7 @@ public class AnimatingTextView extends TextView {
         if (!laidOut) {
             startOnLayout = true;
         }
-        if (textToAnimate == null) {
+        if (targetText == null) {
             RuntimeException exception = new RuntimeException("Text to animate must be set.");
             throw exception;
         } else if (totalDuration == 0 && perCharDuration == 0) {
@@ -136,6 +137,10 @@ public class AnimatingTextView extends TextView {
         setText(currentlyDisplayingText);
     }
 
+
+    /**
+     * text to animate must be resolved by measure text at this point
+     */
     private void resolveDuration(){
         if(totalDuration != 0){
             duration = totalDuration;
@@ -147,7 +152,7 @@ public class AnimatingTextView extends TextView {
     private void measureText(TextView tv){
         TextPaint textPaint = tv.getPaint();
 
-        final String[] words = textToAnimate.split(" ");
+        final String[] words = targetText.split(" ");
         ArrayList<String> resolvedLines = new ArrayList<>();
 
         StringBuilder currentLine = new StringBuilder();
@@ -240,7 +245,7 @@ public class AnimatingTextView extends TextView {
             SavedState ss = new SavedState(superState);
             ss.elapsedAnimationTime = animator.getCurrentPlayTime();
             ss.totalDuration = totalDuration;
-            ss.textToAnimate = textToAnimate;
+            ss.targetText = targetText;
             animator.cancel();
             return ss;
         }
@@ -257,7 +262,7 @@ public class AnimatingTextView extends TextView {
         SavedState ss = (SavedState)state;
         super.onRestoreInstanceState(ss.getSuperState());
 
-        this.textToAnimate = ss.textToAnimate;
+        this.targetText = ss.targetText;
         this.totalDuration = ss.totalDuration;
         this.restoredPlayTime = ss.elapsedAnimationTime;
         start();
@@ -266,7 +271,7 @@ public class AnimatingTextView extends TextView {
     static class SavedState extends BaseSavedState {
         long elapsedAnimationTime;
         long totalDuration;
-        String textToAnimate;
+        String targetText;
 
         SavedState(Parcelable superState) {
             super(superState);
@@ -276,7 +281,7 @@ public class AnimatingTextView extends TextView {
             super(in);
             this.elapsedAnimationTime = in.readLong();
             this.totalDuration = in.readLong();
-            this.textToAnimate = in.readString();
+            this.targetText = in.readString();
         }
 
         @Override
@@ -284,7 +289,7 @@ public class AnimatingTextView extends TextView {
             super.writeToParcel(out, flags);
             out.writeLong(this.elapsedAnimationTime);
             out.writeLong(this.totalDuration);
-            out.writeString(this.textToAnimate);
+            out.writeString(this.targetText);
         }
 
         //required field that makes Parcelables from a Parcel
