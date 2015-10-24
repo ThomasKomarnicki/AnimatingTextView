@@ -7,6 +7,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextPaint;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -75,6 +76,7 @@ public class AnimatingTextView extends TextView {
             }
         });
 
+
     }
 
     private void startAnimating(){
@@ -94,10 +96,6 @@ public class AnimatingTextView extends TextView {
         if (animator == null) {
             animator = ObjectAnimator.ofInt(this, "Delta", 0, (int) totalDuration);
             animator.setDuration(totalDuration);
-            if (restoredPlayTime >= 0) {
-                animator.setCurrentPlayTime(restoredPlayTime);
-                restoredPlayTime = -1; // reset to avoid any problems
-            }
             if(animatorListener != null){
                 animator.addListener(animatorListener);
             }
@@ -106,10 +104,16 @@ public class AnimatingTextView extends TextView {
         }
 
         animator.start();
+        if (restoredPlayTime >= 0) {
+            animator.setCurrentPlayTime(restoredPlayTime);
+            restoredPlayTime = -1; // reset to avoid any problems
+        }
     }
 
     public void stop(){
-
+        if(animator != null){
+            animator.cancel();
+        }
     }
 
     public boolean isAnimating(){
@@ -123,8 +127,9 @@ public class AnimatingTextView extends TextView {
     }
 
     private void setDelta(int delta){
-//        Log.d(TAG,"delta/totalDuration == " + delta+"/"+totalDuration+" == "+ ((double)delta/(double)totalDuration));
+//        Log.d(TAG, "delta/totalDuration == " + delta + "/" + totalDuration + " == " + ((double) delta / (double) totalDuration));
         int subStringIndex = (int)(((((double)delta/(double)totalDuration))) * (double)textToAnimate.length());
+        Log.d(TAG,"delta = "+delta);
 //        Log.d(TAG,"subStringIndex = "+subStringIndex);
         currentlyDisplayingText = textToAnimate.substring(0, subStringIndex);
 
@@ -185,7 +190,11 @@ public class AnimatingTextView extends TextView {
     int desiredHeight;
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+//        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+//        if(desiredHeight == 0 || desiredWidth == 0){
+//            super.onMeasure(widthMeasureSpec,heightMeasureSpec);
+//            return;
+//        }
 
         int widthMode = MeasureSpec.getMode(widthMeasureSpec);
         int widthSize = MeasureSpec.getSize(widthMeasureSpec);
@@ -232,6 +241,7 @@ public class AnimatingTextView extends TextView {
             ss.elapsedAnimationTime = animator.getCurrentPlayTime();
             ss.totalDuration = totalDuration;
             ss.textToAnimate = textToAnimate;
+            animator.cancel();
             return ss;
         }
         return superState;
