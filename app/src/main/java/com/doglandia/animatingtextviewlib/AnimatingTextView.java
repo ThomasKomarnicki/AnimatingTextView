@@ -51,6 +51,7 @@ public class AnimatingTextView extends TextView {
 
     public void setTextToAnimate(String text){
         this.targetText = text;
+        invalidate();
     }
 
     public void setDurationPerCharacter(long milliseconds){
@@ -150,6 +151,9 @@ public class AnimatingTextView extends TextView {
     }
 
     private void measureText(TextView tv){
+//        if(getWidth() == 0){
+//            measure(lastWidthMeasureSpec,lastHeightMeasureSpec);
+//        }
         TextPaint textPaint = tv.getPaint();
 
         final String[] words = targetText.split(" ");
@@ -161,7 +165,7 @@ public class AnimatingTextView extends TextView {
             String word = words[i] + " ";
             currentLine.append(word);
             int viewWidth = getWidth() - (getPaddingLeft() + getPaddingRight());
-            if(textPaint.measureText(currentLine.toString()) > viewWidth){
+            if(textPaint.measureText(currentLine.toString().trim()) > viewWidth){
                 currentLine.delete(currentLine.length()-word.length()-1,currentLine.length()); // -1 is for the last space
                 resolvedLines.add(currentLine.toString());
                 currentLine = new StringBuilder();
@@ -176,7 +180,7 @@ public class AnimatingTextView extends TextView {
         }
 
         if(currentLine.length() > 0){
-            newMessage.append(currentLine.toString());
+            newMessage.append(currentLine.toString().trim());
         }
 
         resolvedLines.add(currentLine.toString());
@@ -193,13 +197,23 @@ public class AnimatingTextView extends TextView {
 
     int desiredWidth;
     int desiredHeight;
+
+    int lastWidthMeasureSpec;
+    int lastHeightMeasureSpec;
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        this.lastWidthMeasureSpec = widthMeasureSpec;
+        this.lastHeightMeasureSpec = heightMeasureSpec;
 //        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 //        if(desiredHeight == 0 || desiredWidth == 0){
 //            super.onMeasure(widthMeasureSpec,heightMeasureSpec);
 //            return;
 //        }
+
+        if(targetText != null){
+            desiredWidth = (int) getPaint().measureText(targetText) + getTotalPaddingLeft() + getTotalPaddingRight();
+        }
 
         int widthMode = MeasureSpec.getMode(widthMeasureSpec);
         int widthSize = MeasureSpec.getSize(widthMeasureSpec);
@@ -214,7 +228,7 @@ public class AnimatingTextView extends TextView {
         } else if (widthMode == MeasureSpec.AT_MOST) {
             width = Math.min(desiredWidth, widthSize);
         } else {
-            width = desiredWidth;
+            width = Math.min(desiredWidth, widthSize);
         }
 
         if (heightMode == MeasureSpec.EXACTLY) {

@@ -19,9 +19,13 @@ public class TestActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.test_activity);
 
-        mAnimatingTextView = (AnimatingTextView) findViewById(R.id.animating_text_view);
+        mAnimatingTextView = (AnimatingTextView) findViewById(R.id.tv_1);
         mAnimatingTextView.setTextColor(Color.BLACK);
 
+        AnimatingTextView tv2 = (AnimatingTextView) findViewById(R.id.tv_2);
+        tv2.setTextToAnimate("TEST 2 PLEASE HELP ME");
+        tv2.setTotalDuration(2000);
+        tv2.start();
     }
 
     @Override
