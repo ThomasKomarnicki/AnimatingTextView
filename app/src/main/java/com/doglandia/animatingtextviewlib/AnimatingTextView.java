@@ -130,7 +130,7 @@ public class AnimatingTextView extends TextView {
     private void setDelta(int delta){
 //        Log.d(TAG, "delta/totalDuration == " + delta + "/" + totalDuration + " == " + ((double) delta / (double) totalDuration));
         int subStringIndex = (int)(((((double)delta/(double)totalDuration))) * (double)textToAnimate.length());
-        Log.d(TAG,"delta = "+delta);
+//        Log.d(TAG,"delta = "+delta);
 //        Log.d(TAG,"subStringIndex = "+subStringIndex);
         currentlyDisplayingText = textToAnimate.substring(0, subStringIndex);
 

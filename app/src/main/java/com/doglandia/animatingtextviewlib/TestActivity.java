@@ -12,7 +12,8 @@ public class TestActivity extends Activity {
 
 
     private static final String TAG = "TestActivity";
-    private AnimatingTextView mAnimatingTextView;
+    public AnimatingTextView mAnimatingTextView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
