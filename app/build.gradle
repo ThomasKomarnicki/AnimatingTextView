@@ -1,4 +1,11 @@
-apply plugin: 'android-library'
+apply plugin: 'com.android.library'
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.jfrog.bintray'
+
+version = "1.0"
+def siteUrl = 'https://github.com/ThomasKomarnicki/AnimatingTextView'      // Homepage URL of the library
+def gitUrl = 'https://github.com/ThomasKomarnicki/AnimatingTextView.git'   // Git repository URL
+group = "doglandia"
 
 android {
     compileSdkVersion 23
@@ -10,28 +17,102 @@ android {
         versionCode 1
         versionName "1.0"
 
-        testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
     }
     buildTypes {
 
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
     }
 }
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
 //    compile 'com.android.support:appcompat-v7:23.0.1'
- 
 
-    androidTestCompile 'junit:junit-dep:4.8.+'
-    androidTestCompile 'org.mockito:mockito-core:' + rootProject.ext.mockitoVersion
-    androidTestCompile 'org.hamcrest:hamcrest-core:' + rootProject.ext.hamcrestVersion
-    androidTestCompile 'com.android.support.test.espresso:espresso-core:' + rootProject.ext.espressoVersion
 
-    testCompile 'junit:junit-dep:4.8.+'
-    testCompile 'org.mockito:mockito-core:' + rootProject.ext.mockitoVersion
-    testCompile 'org.hamcrest:hamcrest-core:' + rootProject.ext.hamcrestVersion
+//    androidTestCompile 'junit:junit-dep:4.8.+'
+//    androidTestCompile 'org.mockito:mockito-core:' + rootProject.ext.mockitoVersion
+//    androidTestCompile 'org.hamcrest:hamcrest-core:' + rootProject.ext.hamcrestVersion
+//    androidTestCompile 'com.android.support.test.espresso:espresso-core:' + rootProject.ext.espressoVersion
+//
+//    testCompile 'junit:junit-dep:4.8.+'
+//    testCompile 'org.mockito:mockito-core:' + rootProject.ext.mockitoVersion
+//    testCompile 'org.hamcrest:hamcrest-core:' + rootProject.ext.hamcrestVersion
+}
+
+
+
+install {
+    repositories.mavenInstaller {
+        // This generates POM.xml with proper parameters
+        pom {
+            project {
+                packaging 'aar'
+
+                // Add your description here
+                name 'A simple extension of TextView that allows you to animate in the text character by character'
+                url siteUrl
+
+                // Set your license
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id 'doglandia'
+                        name 'Thomas Komarnicki'
+                        email 'komarnicki.thomas@gmail.com'
+                    }
+                }
+                scm {
+                    connection gitUrl
+                    developerConnection gitUrl
+                    url siteUrl
+
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+}
+
+task sourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier = 'sources'
+}
+
+task javadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+//    options.encoding = 'UTF-8'
+}
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+bintray {
+    user = properties.getProperty("bintray.user")
+    key = properties.getProperty("bintray.apikey")
+
+    configurations = ['archives']
+    pkg {
+        repo = "maven"
+        name = "AnimatingTextView"
+        websiteUrl = siteUrl
+        vcsUrl = gitUrl
+        licenses = ["Apache-2.0"]
+        publish = true
+    }
 }

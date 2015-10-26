@@ -48,7 +48,10 @@ public class AnimatingTextView extends TextView {
     }
 
 
-
+    /**
+     *
+     * @param text The text to be animated
+     */
     public void setTextToAnimate(String text){
         this.targetText = text;
         invalidate();
